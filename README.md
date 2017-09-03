@@ -1,2 +1,4 @@
 # C-On-LintCode
-practice
+practice on lintcode
+
+solve C++ problems
