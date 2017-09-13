@@ -46,3 +46,9 @@ typedef struct tagBITMAPINFOHEADER {
 	DWORD biClrUsed;		//实际使用颜色数
 	DWORD biClrImportant;	//重要颜色数 0--all
 }BITMAPINFOHEADER;
+
+
+//学习
+void *memset(void *s, int ch, size_t  n)
+//将s中的前n个字节用ch替换并且返回s
+//头文件 #include<string.h> or <memory.h>
