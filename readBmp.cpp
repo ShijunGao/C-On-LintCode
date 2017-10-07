@@ -1,64 +1,39 @@
-#include <string.h>		//memset()
+#include <string.h>     
 #include <math.h>       
 #include <stdio.h>       
 #include <stdlib.h>       
 #include <malloc.h>    
 #include<Windows.h>
+#include<GL/glut.h>
+#include<iostream>
 
-#define   WIDTHBYTES(bits) (((bits)+31)/32*4)//用于使图像宽度所占字节数为4byte的倍数    
+using namespace std;
+
 
 #pragma warning(disable:4996)
 
-//typedef 定义新的类型
+typedef unsigned char  BYTE;
+typedef unsigned short WORD;
+typedef unsigned long  DWORD;
+typedef long LONG;
 
+static GLint ImageWidth;
+static GLint ImageHeight;
+static GLubyte * PixelData;
+static GLint PixelLength;
 
-typedef unsigned char  BYTE;	//无符号字节型，one Byte	
-typedef unsigned short WORD;	//无符号短整型，two Bytes
-typedef unsigned long  DWORD;	//无符号长整型，eight Bytes
-typedef long LONG;				//长整型，eight Bytes
+void display() {
+	glClear(GL_COLOR_BUFFER_BIT);
+	glDrawPixels(ImageWidth, ImageHeight, GL_BGR_EXT, GL_UNSIGNED_BYTE, PixelData);
+	glutSwapBuffers();
+}
 
-//头文件
-
-//以下结构体C++中已定义
-//typedef struct tagBITMAPFILEHEADER {			
-//	//共14Byte 2+4+2+2+4
-//
-//	WORD bType;			//文件类型，必须是0x42 (B,低字节), 0x4D (M,高字节) 0x4D42
-//	DWORD bfSize;		//文件大小
-//	WORD bfReserved1;	//保留字，不考虑？
-//	WORD bfReserved2;	//保留字，+1；
-//	DWORD bfOffBits;	//偏移量，本次使用的是54
-//}BITMAPFILEHEADER;
-//
-////位图信息头
-//
-//typedef struct tagBITMAPINFOHEADER {
-//	//40Byte  4+4+4+2+2+4+4+4+4+4+4
-//
-//	DWORD biSize;			//结构体tagBITMAPINFOHEADER所占字节数
-//	LONG biWidth;			//图像宽度 pixel
-//	LONG biHeight;			//高度 pixel
-//	WORD biPlanes;			//目标设备级别？===1
-//	WORD biBitCount;		//本次为24位真彩图
-//							//每个像素所需位数 
-//							// 1位 --黑白
-//							// 4、8、256
-//	DWORD biCompression;	//压缩类型 
-//							// 0 --不压缩
-//							// 1 --BI_RLE8
-//							// 2 --BI_RLE4
-//	DWORD biSizeImage;		//位图数据大小 biWidth * biHeight (biWidth补齐4的倍数)
-//	LONG biXPelsPerMeter;	//水平分辨率
-//	LONG biYPelsPermeter;	//垂直分辨率
-//	DWORD biClrUsed;		//实际使用颜色数
-//	DWORD biClrImportant;	//重要颜色数 0--all
-//}BITMAPINFOHEADER;
-void main(){
+void main(int argc, char *argv[]) {
 	BITMAPFILEHEADER bitHead;
 	BITMAPINFOHEADER bitInfoHead;
 	FILE* pfile;
 
-	char strFile[50] = "..\\test.bmp";	//打开图像路径，需修改为自己图像存储的路径  
+	char strFile[50] = "G:\\images\\test.bmp";	//打开图像路径，需修改为自己图像存储的路径  
 	pfile = fopen(strFile, "rb");				//文件打开图像  
 
 									  
@@ -69,22 +44,36 @@ void main(){
 		printf("file is not .bmp file!");
 		return;
 	}
-	fread(&bitHead, 1, sizeof(BITMAPFILEHEADER), pfile);		//读取文件头
-	fread(&bitInfoHead, 1, sizeof(BITMAPINFOHEADER), pfile);	//读取位图信息头信息
 
-	int width = bitInfoHead.biWidth;							//行宽 pixel
-	int height = bitInfoHead.biHeight;							//图高 pixel
-	//分配内存空间把源图存入内存     
-	int l_width = WIDTHBYTES(width* bitInfoHead.biBitCount);	//计算位图的实际宽度并确保它为4byte的倍数   
+	fseek(pfile, 0x0012, SEEK_SET);
+	fread(&ImageWidth, sizeof(ImageWidth), 1, pfile);
+	fread(&ImageHeight, sizeof(ImageHeight), 1, pfile);
 
-	BYTE *pColorData = (BYTE *)malloc(height*l_width);			//开辟内存空间存储图像数据  
-	memset(pColorData, 0, height*l_width);						//用'0'初始化pColorData
+	// 计算像素数据长度
+	PixelLength = ImageWidth * 3;
+	while (PixelLength % 4 != 0)
+		++PixelLength;
+	PixelLength *= ImageHeight;
 
-	long nData = height*l_width;
+	// 读取像素数据
+	PixelData = (GLubyte*)malloc(PixelLength);
+	if (PixelData == 0)
+		exit(0);
 
-	fread(pColorData, 1, nData, pfile);							//把位图数据读到一维数组中
+	fseek(pfile, 54, SEEK_SET);
+	fread(PixelData, PixelLength, 1, pfile);
+
 
 	fclose(pfile);												//关闭文件流
+
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowPosition(100, 100);
+	glutInitWindowSize(ImageWidth, ImageHeight);
+	glutCreateWindow("显示bmp");
+	glutDisplayFunc(&display);
+	glutMainLoop();
+
 	printf("read .bmp succeed\n");
 
 	system("pause");
